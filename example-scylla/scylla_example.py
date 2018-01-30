@@ -17,20 +17,23 @@ from cassandra.auth import PlainTextAuthProvider
 app = Flask(__name__)
 
 # connection strings, parsing, and certificate path
-compose_scylla_url = os.environ['COMPOSE_SCYLLA_URL']
-url1,url2,url3 = compose_scylla_url.split(",")
+compose_scylla_url = os.environ['COMPOSE_SCYLLA_URLS']
+url1, url2, url3 = compose_scylla_url.split(",")
 
 cstr1 = urlparse(url1)
 cstr2 = urlparse(url2)
 cstr3 = urlparse(url3)
 
-path_to_scylla_cert = os.environ['PATH_TO_SCYLLA_CERT']
-
-# Optional dict with absolute path to CA certificate and the defualt Cassandra protocol ssl version.
-ssl_options = {
-    'ca_certs': path_to_scylla_cert,
-    'ssl_version': ssl.PROTOCOL_TLSv1
-}
+try:
+    path_to_scylla_cert = os.environ['PATH_TO_SCYLLA_CERT']
+    ssl_options = {
+        'ca_carts':path_to_scylla_cert,
+        'ssl_version': ssl.PROTOCOL_TLSv1_2
+    }
+except KeyError:
+    ssl_options = {
+        'ssl_version': ssl.PROTOCOL_TLSv1_2
+    }
 
 # Creates class object that supplies username/password in plain-text.
 auth_provider = PlainTextAuthProvider(
@@ -39,22 +42,27 @@ auth_provider = PlainTextAuthProvider(
 
 # Handles connection setup and information
 cluster = Cluster(
-    contact_points = [cstr1.hostname,cstr2.hostname,cstr3.hostname],
-    port = cstr1.port,
-    auth_provider = auth_provider,
+    contact_points=[cstr1.hostname, cstr2.hostname, cstr3.hostname],
+    port=cstr1.port,
+    auth_provider=auth_provider,
     ssl_options=ssl_options)
 
 # Starts session, connects to a keyspace
-session = cluster.connect("grand_tour")
+session = cluster.connect()
 
+session.execute("""CREATE KEYSPACE IF NOT EXISTS examples
+        WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3' };""")
+
+session.set_keyspace("examples")
+
+session.execute("""CREATE TABLE IF NOT EXISTS words (
+		id UUID primary key,
+		word text,
+		definition text) """)
 
 @app.route('/')
 # top-level page display, creates table on first run
 def serve_page():
-    session.execute("""CREATE TABLE IF NOT EXISTS words (
-		id UUID primary key,
-		word text,
-		definition text) """)
     return render_template('index.html')
 
 

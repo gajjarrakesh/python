@@ -17,7 +17,7 @@ from cassandra.auth import PlainTextAuthProvider
 app = Flask(__name__)
 
 # connection strings, parsing, and certificate path
-compose_scylla_url = os.environ['COMPOSE_SCYLLA_URL']
+compose_scylla_url = os.environ['COMPOSE_SCYLLA_URLS']
 url1,url2,url3 = compose_scylla_url.split(",")
 
 cstr1 = urlparse(url1)

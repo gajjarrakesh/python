@@ -44,8 +44,10 @@ cluster = Cluster(
     auth_provider = auth_provider,
     ssl_options=ssl_options)
 
-# Starts session, creates keyspace on first run
+# Starts session
 session = cluster.connect()
+
+# Create keyspace on first run
 session.execute("""CREATE  KEYSPACE IF NOT EXISTS grand_tour
    WITH REPLICATION = { 
        'class' : 'SimpleStrategy', 'replication_factor' : 3 } """)

@@ -15,12 +15,15 @@ app = Flask(__name__)
 
 # connection string and connection initialization
 compose_elasticsearch_url = os.environ['COMPOSE_ELASTICSEARCH_URL']
-parsed = urlparse(compose_elasticsearch_url)
+url1,url2 = compose_elasticsearch_url.split(",")
+
+cstr1 = urlparse(url1)
+cstr2 = urlparse(url2)
 
 es = Elasticsearch(
-    [parsed.hostname],
-    http_auth=(parsed.username, parsed.password),
-    port=parsed.port,
+    [cstr1.hostname, cstr2.hostname],
+    http_auth=(cstr1.username, cstr1.password),
+    port=cstr1.port,
     use_ssl=True,
     verify_certs=True
 )

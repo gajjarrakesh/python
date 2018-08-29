@@ -2,6 +2,7 @@
 
 
 import os
+import sys
 import ssl
 
 from flask import Flask
@@ -10,6 +11,7 @@ from flask import request
 
 import pymongo
 from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure
 
 from bson import json_util
 
@@ -18,14 +20,30 @@ app = Flask(__name__)
 
 # connection string and initialization
 mongodb_url = os.environ['COMPOSE_MONGODB_URL']
-path_to_cert = os.environ['PATH_TO_MONGODB_CERT']
-client = MongoClient(
-    mongodb_url,
-    ssl=True,
-    ssl_ca_certs=path_to_cert
-)
+path_to_cert = os.environ.get('PATH_TO_MONGODB_CERT', default=False)
 
-# databse/collection names
+if path_to_cert:
+    client = MongoClient(
+        mongodb_url,
+        ssl=True,
+        ssl_ca_certs=path_to_cert
+    )
+else:
+    client = MongoClient(
+        mongodb_url,
+        ssl=True
+    )
+
+# test db connection, if db is not available, do not start flask server
+try:
+    # The ismaster command is cheap and does not require auth, recommended by pymongo 
+    client.admin.command('ismaster')
+except ConnectionFailure as err:
+    print("Failed connection: %s" % str(err))
+    sys.exit()
+
+
+# database/collection names
 db = client.grand_tour
 collection = db.words
 
